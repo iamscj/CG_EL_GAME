@@ -2,41 +2,41 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// For camera to follow the player drag the camera onto player 
-// then it automatically follows the player
 public class PlayerMovement : MonoBehaviour
 {
-
-    //RigigBody has all the properties such as mass, gravity, etc and falls down
     Rigidbody rb;
-
-    // SerializeField Enables the variable change in unity (variables are also visible in unity editor)
     [SerializeField] float movementSpeed = 6f;
     [SerializeField] float jumpForce = 5f;
-
-    // add groundCheck gameObject, and in unity connect the Transform with groundCheck Object
     [SerializeField] Transform groundCheck;
-
-    //Layer is added to Floor Prefabs to enable groundCheck
     [SerializeField] LayerMask ground;
-
     [SerializeField] AudioSource jumpSound;
 
-    // Start is called before the first frame update
     void Start()
     {
-        // initialize the rb object
         rb = GetComponent<Rigidbody>();
     }
 
-    // Update is called once per frame
     void Update()
     {
+        // Get the forward and right vectors of the camera
+        Vector3 camForward = Camera.main.transform.forward;
+        Vector3 camRight = Camera.main.transform.right;
+
+        camForward.y = 0f;
+        camRight.y = 0f;
+
+        // Normalize vectors to ensure consistent speed in all directions
+        camForward.Normalize();
+        camRight.Normalize();
+
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
 
-        //automatically handles + and -
-        rb.velocity = new Vector3(horizontalInput * movementSpeed, rb.velocity.y, verticalInput * movementSpeed);
+        // Calculate movement direction based on camera orientation
+        Vector3 moveDirection = camForward * verticalInput + camRight * horizontalInput;
+
+        // Set the velocity based on the calculated direction
+        rb.velocity = new Vector3(moveDirection.x * movementSpeed, rb.velocity.y, moveDirection.z * movementSpeed);
 
         if (Input.GetButtonDown("Jump") && IsGrounded())
         {
@@ -52,18 +52,15 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if(collision.gameObject.CompareTag("Enemy Head"))
+        if (collision.gameObject.CompareTag("Enemy Head"))
         {
             Destroy(collision.transform.parent.gameObject);
             Jump();
         }
     }
 
-
-    // To check whether the player is touching ground or not
     bool IsGrounded()
     {
-        // position, radius of small sphere in the bottom, layermask (floor)
         return Physics.CheckSphere(groundCheck.position, .1f, ground);
     }
 }
